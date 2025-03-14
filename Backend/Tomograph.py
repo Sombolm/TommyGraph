@@ -37,11 +37,14 @@ class Tomograph:
         rr, cc = line(y1, x1, y2, x2)
         return np.array([rr, cc])
 
+    #TODO fix sinograms and reconstructed images
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
                        angularSpread: int, center: tuple, radius: int):
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
-        #sinograms = []
+
+        sinograms = dict()
         linePointsDict = dict()
+
         for angle in range(0, 360, alpha):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radius, center)
 
@@ -56,18 +59,22 @@ class Tomograph:
 
                     if 0 <= x < imageArray.shape[0] and 0 <= y < imageArray.shape[1]:
                         sinogram[angle // alpha, i] += imageArray[x, y]
+            if angle == 0:
+                angle = 1
 
-            #sinograms.append(sinogram)
+            sinograms[360 // angle] = sinogram
 
-        return sinogram, linePointsDict
+
+        return sinogram, linePointsDict, sinograms
 
     def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radius: int,
-                             linePointsDict: dict) -> np.ndarray:
+                             linePointsDict: dict):
 
-        filtered_sinogram = sinogram
+        filteredSinogram = sinogram
 
         image_size = (radius * 2, radius * 2)
-        reconstructed_image = np.zeros(image_size)
+        reconstructedImage = np.zeros(image_size)
+        reconstructedImages = dict()
 
         for angle in range(0, 360, alpha):
 
@@ -78,11 +85,15 @@ class Tomograph:
                     x, y = linePoints[:, j]
 
                     if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
-                        reconstructed_image[x, y] += filtered_sinogram[angle // alpha, i]
+                        reconstructedImage[x, y] += filteredSinogram[angle // alpha, i]
 
-        reconstructed_image = reconstructed_image / np.max(reconstructed_image) * 255
+            if angle == 0:
+                angle = 1
+            reconstructedImages[360 // angle] = reconstructedImage / np.max(reconstructedImage) * 255
 
-        return reconstructed_image
+        reconstructedImage = reconstructedImage / np.max(reconstructedImage) * 255
+
+        return reconstructedImage, reconstructedImages
 
     def displayImagesMatPlotLib(self):
         pass
@@ -94,13 +105,20 @@ class Tomograph:
 
         paddedImage, newCenter, newRadius = self.utils.padImageForCircle(imageArray, center, radius)
 
-        sinogram, linePointsDict = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius)
-        reconstructedImage = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, newRadius, linePointsDict)
+        sinogram, linePointsDict, sinograms = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius)
+        reconstructedImage, reconstructedImages = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, newRadius, linePointsDict)
 
         plt.imshow(sinogram, cmap='gray')
         plt.show()
         plt.imshow(reconstructedImage, cmap='gray')
         plt.show()
+
+        for key in sinograms.keys():
+            plt.imshow(sinograms[key], cmap='gray')
+            plt.show()
+            plt.imshow(reconstructedImages[key], cmap='gray')
+            plt.show()
+
 
 
 
