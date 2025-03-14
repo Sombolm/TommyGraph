@@ -37,11 +37,10 @@ class Tomograph:
         rr, cc = line(y1, x1, y2, x2)
         return np.array([rr, cc])
 
-    #TODO save linePoints and return them
+    #TODO reuse emitters, detectors, linePoints
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, center: tuple, radius: int):
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
         #sinograms = []
-        linePointsArray = []
         for angle in range(0, 360, alpha):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radius, center)
 
@@ -70,16 +69,14 @@ class Tomograph:
         reconstructed_image = np.zeros(image_size)
 
         for angle in range(0, 360, alpha):
-            # Use pre-calculated emitters and detectors for this angle
-            emitters_for_angle = emitters[angle // alpha]
-            detectors_for_angle = detectors[angle // alpha]
+            emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread,
+                                                                   radius, center)
 
             for i in range(numberOfEmittersAndDetectors):
-                emitter = emitters_for_angle[i]
-                detector = detectors_for_angle[i]
+                emitter = emitters[i]
+                detector = detectors[i]
 
-                # Use pre-calculated line points for this emitter-detector pair
-                #line_points = linePoints[angle // alpha, i]
+                line_points = self.bresenham(emitter[0], emitter[1], detector[0], detector[1])
 
                 for j in range(line_points.shape[1]):
                     x, y = line_points[:, j]
@@ -105,7 +102,6 @@ class Tomograph:
         reconstructedImage = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, angularSpread,
                                                        newCenter, newRadius, emitters, detectors, linePoints)
 
-        #show sinogram and reconstructed image
         plt.imshow(sinogram, cmap='gray')
         plt.show()
         plt.imshow(reconstructedImage, cmap='gray')
