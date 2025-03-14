@@ -38,9 +38,11 @@ class Tomograph:
         return np.array([rr, cc])
 
     #TODO reuse emitters, detectors, linePoints
-    def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, center: tuple, radius: int):
+    def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
+                       angularSpread: int, center: tuple, radius: int):
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
         #sinograms = []
+        linePointsDict = dict()
         for angle in range(0, 360, alpha):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radius, center)
 
@@ -49,6 +51,7 @@ class Tomograph:
                 detector = detectors[i]
 
                 linePoints = self.bresenham(emitter[0], emitter[1], detector[0], detector[1])
+                linePointsDict[(angle, i)] = linePoints
                 for j in range(linePoints.shape[1]):
                     x, y = linePoints[:, j]
 
@@ -57,11 +60,10 @@ class Tomograph:
 
             #sinograms.append(sinogram)
 
-        return sinogram, emitters, detectors, linePoints
+        return sinogram, linePointsDict
 
-    def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
-                             angularSpread: int, center: tuple, radius: int, emitters: np.ndarray,
-                             detectors: np.ndarray, linePoints: np.ndarray) -> np.ndarray:
+    def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radius: int,
+                             linePointsDict: dict) -> np.ndarray:
 
         filtered_sinogram = sinogram
 
@@ -69,17 +71,12 @@ class Tomograph:
         reconstructed_image = np.zeros(image_size)
 
         for angle in range(0, 360, alpha):
-            emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread,
-                                                                   radius, center)
 
             for i in range(numberOfEmittersAndDetectors):
-                emitter = emitters[i]
-                detector = detectors[i]
+                linePoints = linePointsDict[(angle, i)]
 
-                line_points = self.bresenham(emitter[0], emitter[1], detector[0], detector[1])
-
-                for j in range(line_points.shape[1]):
-                    x, y = line_points[:, j]
+                for j in range(linePoints.shape[1]):
+                    x, y = linePoints[:, j]
 
                     if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
                         reconstructed_image[x, y] += filtered_sinogram[angle // alpha, i]
@@ -98,9 +95,8 @@ class Tomograph:
 
         paddedImage, newCenter, newRadius = self.utils.padImageForCircle(imageArray, center, radius)
 
-        sinogram, emitters, detectors, linePoints = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius)
-        reconstructedImage = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, angularSpread,
-                                                       newCenter, newRadius, emitters, detectors, linePoints)
+        sinogram, linePointsDict = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius)
+        reconstructedImage = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, newRadius, linePointsDict)
 
         plt.imshow(sinogram, cmap='gray')
         plt.show()
