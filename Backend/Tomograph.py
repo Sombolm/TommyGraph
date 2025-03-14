@@ -37,7 +37,6 @@ class Tomograph:
         rr, cc = line(y1, x1, y2, x2)
         return np.array([rr, cc])
 
-    #TODO reuse emitters, detectors, linePoints
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
                        angularSpread: int, center: tuple, radius: int):
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
