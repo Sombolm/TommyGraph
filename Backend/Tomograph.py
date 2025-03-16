@@ -39,7 +39,7 @@ class Tomograph:
 
 
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
-                       angularSpread: int, center: tuple, radius: int) -> tuple:
+                       angularSpread: int, center: tuple, radius: int, filter: bool) -> tuple:
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
 
         sinograms = dict()
@@ -59,15 +59,16 @@ class Tomograph:
 
                     if 0 <= x < imageArray.shape[0] and 0 <= y < imageArray.shape[1]:
                         sinogram[angle // alpha, i] += imageArray[x, y]
-
-            sinograms[idx + 1] = sinogram.copy()
+            if filter:
+                sinogram = self.Fiter.filterSinogram(sinogram)
+                sinograms[idx + 1] = sinogram.copy()
+            else:
+                sinograms[idx + 1] = sinogram.copy()
 
         return linePointsDict, sinograms
 
     def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radius: int,
                              linePointsDict: dict) -> dict:
-
-        filteredSinogram = sinogram
 
         image_size = (radius * 2, radius * 2)
         reconstructedImage = np.zeros(image_size)
@@ -82,7 +83,7 @@ class Tomograph:
                     x, y = linePoints[:, j]
 
                     if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
-                        reconstructedImage[x, y] += filteredSinogram[angle // alpha, i]
+                        reconstructedImage[x, y] += sinogram[angle // alpha, i]
 
             reconstructedImages[idx + 1] = reconstructedImage / np.max(reconstructedImage) * 255
 
@@ -100,6 +101,7 @@ class Tomograph:
         plt.imshow(reconstructedImages[max(sinograms.keys()) // 2], cmap='gray')
         plt.show()
 
+
     #TODO implement filtering
     def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool) -> tuple:
         imageArray = self.converter.JPGtoMatrix(imageURL)
@@ -108,7 +110,7 @@ class Tomograph:
 
         paddedImage, newCenter, newRadius = self.utils.padImageForCircle(imageArray, center, radius)
 
-        linePointsDict, sinograms = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius)
+        linePointsDict, sinograms = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius, filterSinogram)
 
         reconstructedImages = self.createReconstruction(sinograms[max(sinograms.keys())], alpha, numberOfEmittersAndDetectors, newRadius, linePointsDict)
 
