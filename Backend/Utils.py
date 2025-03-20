@@ -7,7 +7,16 @@ class Utils:
         return np.floor(np.array(array.shape) / 2).astype(int)
 
     def getRadiusOfImage(self, array):
-        return np.min(array.shape) // 2
+        return np.shape(array)[0] // 2, np.shape(array)[1] // 2
+
+    def padImageToSquare(self, imageArray: np.ndarray):
+        paddedImage = np.zeros((max(imageArray.shape), max(imageArray.shape)))
+        paddedImage[:imageArray.shape[0], :imageArray.shape[1]] = imageArray
+
+        #plot the padded image
+        plt.imshow(paddedImage, cmap='gray')
+        plt.show()
+        return paddedImage
 
     def padImageForCircle(self, imageArray: np.ndarray, center: tuple, radius: int):
         paddedImage = np.zeros((imageArray.shape[0] + 2 * radius, imageArray.shape[1] + 2 * radius))

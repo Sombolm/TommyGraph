@@ -1,6 +1,8 @@
 from math import radians
+
 import numpy as np
 from matplotlib import pyplot as plt
+from numpy import ndarray
 from skimage.draw import line
 
 from Backend.Converter import Converter
@@ -8,29 +10,29 @@ from Backend.Filter import Filter
 from Backend.Saver import Saver
 from Backend.Utils import Utils
 
-
 class Tomograph:
     def __init__(self):
         self.converter = Converter()
         self.utils = Utils()
-        self.Fiter = Filter()
-        self.Saver = Saver()
+        self.filter = Filter()
+        self.saver = Saver()
+        self.kernel = self.filter.createFilter(21)
 
-    def getEmitterAndDetectorPoints(self, angle: int, numberOfEmittersAndDetectors: int, angularSpread: int, radius: int, center: tuple):
-        def calculatePoints(angle: float, numberOfEmittersAndDetectors: int, angularSpread: float, radius: int, center: tuple):
+    def getEmitterAndDetectorPoints(self, angle: int, numberOfEmittersAndDetectors: int, angularSpread: int, radiusX: int, radiusY, center: tuple):
+        def calculatePoints(angle: float, numberOfEmittersAndDetectors: int, angularSpread: float, radiusX: int, radiusY: int ,center: tuple):
             points = []
             angle_step = angularSpread / (numberOfEmittersAndDetectors - 1) if numberOfEmittersAndDetectors > 1 else 0
 
             for i in range(numberOfEmittersAndDetectors):
                 current_angle = angle + angle_step * i
-                x = int(radius * np.cos(current_angle) + center[0])
-                y = int(radius * np.sin(current_angle) + center[1])
+                x = int(radiusX * np.cos(current_angle) + center[1])
+                y = int(radiusY * np.sin(current_angle) + center[0])
                 points.append((x, y))
 
             return np.array(points)
 
-        return (calculatePoints(radians(angle - angularSpread / 2), numberOfEmittersAndDetectors, radians(angularSpread), radius, center),
-            calculatePoints(radians(angle - angularSpread / 2 + 180), numberOfEmittersAndDetectors, radians(angularSpread), radius, center)[::-1])
+        return (calculatePoints(radians(angle - angularSpread / 2), numberOfEmittersAndDetectors, radians(angularSpread), radiusX, radiusY, center),
+            calculatePoints(radians(angle - angularSpread / 2 + 180), numberOfEmittersAndDetectors, radians(angularSpread), radiusX, radiusY, center)[::-1])
 
 
     def bresenham(self, x1, y1, x2, y2) -> np.ndarray:
@@ -39,14 +41,13 @@ class Tomograph:
 
 
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
-                       angularSpread: int, center: tuple, radius: int, filter: bool) -> tuple:
+                       angularSpread: int, center: tuple, radiusX: int,radiusY: int, filter: bool) -> tuple:
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
 
-        sinograms = dict()
         linePointsDict = dict()
 
         for idx,angle in enumerate(range(0, 360, alpha)):
-            emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radius, center)
+            emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radiusX, radiusY, center)
 
             for i in range(numberOfEmittersAndDetectors):
                 emitter = emitters[i]
@@ -59,18 +60,21 @@ class Tomograph:
 
                     if 0 <= x < imageArray.shape[0] and 0 <= y < imageArray.shape[1]:
                         sinogram[angle // alpha, i] += imageArray[x, y]
-            if filter:
-                sinogram = self.Fiter.filterSinogram(sinogram)
-                sinograms[idx + 1] = sinogram.copy()
-            else:
-                sinograms[idx + 1] = sinogram.copy()
 
-        return linePointsDict, sinograms
+        if filter:
+            sinogram = self.filter.filterSinogram(sinogram, self.kernel)
 
-    def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radius: int,
+
+            #plt.imshow(sinogram, cmap='gray')
+            #plt.show()
+
+
+        return linePointsDict, sinogram
+
+    def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
                              linePointsDict: dict) -> dict:
 
-        image_size = (radius * 2, radius * 2)
+        image_size = (radiusY * 2, radiusX * 2)
         reconstructedImage = np.zeros(image_size)
         reconstructedImages = dict()
 
@@ -85,38 +89,86 @@ class Tomograph:
                     if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
                         reconstructedImage[x, y] += sinogram[angle // alpha, i]
 
-            reconstructedImages[idx + 1] = reconstructedImage / np.max(reconstructedImage) * 255
+            reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
+                        np.max(reconstructedImage) - np.min(reconstructedImage))
+
+            reconstructedImages[idx + 1] = reconstructedImageNormalized
 
         return reconstructedImages
 
-    def displayImagesMatPlotLib(self,sinograms, reconstructedImages) -> None:
+    def displayImagesMatPlotLib(self,sinogram, reconstructedImages) -> None:
+        maxIter = sinogram.shape[0]
 
-        plt.imshow(sinograms[max(sinograms.keys())], cmap='gray')
-        plt.show()
-        plt.imshow(reconstructedImages[max(sinograms.keys())], cmap='gray')
-        plt.show()
-
-        plt.imshow(sinograms[max(sinograms.keys()) // 2], cmap='gray')
-        plt.show()
-        plt.imshow(reconstructedImages[max(sinograms.keys()) // 2], cmap='gray')
+        plt.imshow(sinogram, cmap='gray')
+        plt.title('Sinogram')
         plt.show()
 
+        plt.imshow(reconstructedImages[maxIter], cmap='gray')
+        plt.title('Reconstructed Image')
+        plt.show()
 
-    #TODO implement filtering
-    def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool) -> tuple:
-        imageArray = self.converter.JPGtoMatrix(imageURL)
+        dominantColor = np.mean(sinogram)
+
+        for i in range(1, maxIter + 1):
+            sinogramDisplay = np.full_like(sinogram, dominantColor)
+            sinogramDisplay[-i:, :] = sinogram[-i:, :]
+
+            plt.imshow(sinogramDisplay, cmap='gray')
+            plt.title(f'Sinogram {i}')
+            plt.show()
+
+            plt.imshow(reconstructedImages[i], cmap='gray')
+            plt.title(f'Reconstructed Image {i}')
+            plt.show()
+
+    def packageImages(self, sinogram: np.ndarray, reconstructedImages: dict):
+        maxIter = sinogram.shape[0]
+        dominantColor = np.median(sinogram)
+
+        sinograms = dict()
+        sinograms[maxIter] = sinogram
+        for i in range(1, maxIter ):
+            sinogramDisplay = np.full_like(sinogram, dominantColor)
+            sinogramDisplay[-i:, :] = sinogram[-i:, :]
+            sinograms[i] = sinogramDisplay
+
+
+        plt.imshow(sinograms[maxIter], cmap='gray')
+        plt.title('Sinogram')
+        plt.show()
+
+        plt.imshow(reconstructedImages[maxIter], cmap='gray')
+        plt.title('Reconstructed Image')
+        plt.show()
+
+        return sinograms, reconstructedImages, maxIter
+    #TODO: DICOM
+    def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
+            imageArray,meta, saveAsDicom: bool, dicomParams: dict, savePath: str) -> tuple:
+
+        if imageArray is None:
+            imageArray = self.converter.JPGtoMatrix(imageURL)
+
+
         center = self.utils.getCenterOfImage(imageArray)
-        radius = self.utils.getRadiusOfImage(imageArray)
+        radiusY, radiusX = self.utils.getRadiusOfImage(imageArray)
 
-        paddedImage, newCenter, newRadius = self.utils.padImageForCircle(imageArray, center, radius)
+        #paddedImage, newCenter, newRadius = self.utils.padImageForCircle(imageArray, center, radius)
 
-        linePointsDict, sinograms = self.createSinogram(paddedImage, alpha, numberOfEmittersAndDetectors, angularSpread, newCenter, newRadius, filterSinogram)
 
-        reconstructedImages = self.createReconstruction(sinograms[max(sinograms.keys())], alpha, numberOfEmittersAndDetectors, newRadius, linePointsDict)
+        linePointsDict, sinogram = self.createSinogram(imageArray, alpha, numberOfEmittersAndDetectors, angularSpread, center, radiusX, radiusY, filterSinogram)
 
-        self.displayImagesMatPlotLib(sinograms, reconstructedImages)
+        reconstructedImages = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, radiusX, radiusY, linePointsDict)
 
-        return sinograms, reconstructedImages
+        #self.displayImagesMatPlotLib(sinogram, reconstructedImages)
+        sinogram, reconstructedImages, maxIter = self.packageImages(sinogram, reconstructedImages)
+
+        if saveAsDicom:
+            self.saver.saveAsDicomFile(savePath, reconstructedImages[maxIter], meta, dicomParams)
+        else:
+            self.saver.saveMatrixAsJPG(reconstructedImages[maxIter], savePath)
+
+        return sinogram, reconstructedImages
 
 
 
