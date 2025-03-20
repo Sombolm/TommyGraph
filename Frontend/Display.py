@@ -2,32 +2,20 @@ import flet as ft
 from Frontend.Fileselector import FileSelector
 from Backend.Tomograph import Tomograph
 
-''' unused
-def get_loading_overlay(page: ft.Page):
-    overlay = ft.Container(
-        ft.Column([
-            ft.Text("Processing...", color=ft.colors.WHITE, weight=ft.FontWeight.BOLD, size=40),
-        ], alignment=ft.MainAxisAlignment.CENTER),
-        bgcolor=ft.colors.BLACK54,
-        visible=False,
-        width=page.width,
-        height=page.height,
-        alignment=ft.alignment.center,
-    )
-
-    return overlay
-'''
-
 def get_appbar(page: ft.Page):
-    def run_tomograph(e):
+    # Appbar functions------------------
+    def run_tomograph(e, alpha, numEmittersDetectors, angSpread, isFiltered):
         tomograph = Tomograph()
+
+        # TODO: Check for valid parameters
 
         runButton.visible = False
         loader.visible = True
         page.update()
 
         try:
-            tomograph.run(fileSelector.selectedFilePath, 4, 180, 180, False)
+            tomograph.run(fileSelector.selectedFilePath, alpha, numEmittersDetectors,
+                          angSpread, isFiltered)
         except:
             page.open(alertDialogNoFileSelected)
 
@@ -35,6 +23,7 @@ def get_appbar(page: ft.Page):
         loader.visible = False
         page.update()
 
+    # Appbar components----------------
     fileSelector = FileSelector(page)
 
     alertDialogNoFileSelected = ft.AlertDialog(
@@ -42,12 +31,24 @@ def get_appbar(page: ft.Page):
         content=ft.Text("No .jpg file selected", color=ft.colors.BLACK)
     )
 
+    filteredCheckbox = ft.Switch(value=False, inactive_track_color=ft.colors.GREEN_200, scale=0.8)
+
+    paramNumEmittersDetectors = ft.TextField(width=75, scale=0.8, value='180')
+    paramAngSpread = ft.TextField(width=75, scale=0.8, value='180')
+    paramAlpha = ft.TextField(width=75, scale=0.8, value='4')
+
     runButton = ft.IconButton(
                     icon=ft.Icons.PLAY_ARROW_OUTLINED,
-                    on_click=run_tomograph
+                    on_click=lambda e: run_tomograph(e, isFiltered=filteredCheckbox.value,
+                                                     alpha=paramAlpha.value,
+                                                     numEmittersDetectors=paramNumEmittersDetectors.value,
+                                                     angSpread=paramAngSpread.value
+                                                     )
                 )
+
     loader = ft.ProgressRing(visible=False)
 
+    # Appbar-------------------------
     appbar = ft.AppBar(
         bgcolor=ft.colors.GREEN_300,
         title=ft.Row(
@@ -59,15 +60,23 @@ def get_appbar(page: ft.Page):
                     leading=ft.Icon(ft.Icons.FOLDER),
                     style=ft.ButtonStyle(),
                     on_click=fileSelector.pick_file,
-                ),
+                )
             ],
             alignment=ft.MainAxisAlignment.START,
         ),
         actions = [
+            paramNumEmittersDetectors,
+            ft.Text("No. of detectors", size=14),
+            paramAngSpread,
+            ft.Text("Angular spread", size=14),
+            paramAlpha,
+            ft.Text("Alpha step", size=14),
+            filteredCheckbox,
+            ft.Text("Filtered", size=14),
             loader,
             ft.Container(
                 runButton,
-                padding=ft.padding.only(right=10),
+                padding=ft.padding.only(right=10, left=10),
             )
         ]
     )
