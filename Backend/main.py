@@ -2,4 +2,9 @@ from Backend.Tomograph import Tomograph
 
 tomograph = Tomograph()
 tomograph.run("../ExampleDICOM/Kropka.dcm", 10, 180, 180, True, None,
-              None, False, {},"../ExampleImages/Shepp_logan.jpg")
+              False, dict(
+    PatientName='Test',
+    PatientID='001',
+    ImageComments='Comment',
+    StudyDate='20250321',
+), "../ExampleDICOM/test.jpg")
