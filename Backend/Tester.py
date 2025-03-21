@@ -29,7 +29,7 @@ class Tester:
         numberOfEmittersAndDetectorsRange = list(range(90, 720, 90))
         numberOfScansRange = list(range(90, 720, 90))
         alphas = [int(360 // i) for i in numberOfScansRange]
-        angularSpreadRange = list(range(45, 270, 45))
+        angularSpreadRange = list(range(45, 180, 45)) #ograniczyc do 180
         testing = True
 
         print("Running test for increasing accuracy")

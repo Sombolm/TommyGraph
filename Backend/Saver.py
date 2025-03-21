@@ -67,7 +67,7 @@ class Saver:
 
         ds.PixelData = image.astype(np.uint16).tobytes()
 
-        ds.save_as(path)
+        ds.save_as(path, write_like_original=False)
 '''
 saver = Saver()
 converter = Converter()
