@@ -72,7 +72,7 @@ class Tomograph:
         return linePointsDict, sinogram
 
     def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
-                             linePointsDict: dict) -> dict:
+                             linePointsDict: dict, testing=False):
 
         image_size = (radiusY * 2, radiusX * 2)
         reconstructedImage = np.zeros(image_size)
@@ -91,8 +91,11 @@ class Tomograph:
 
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
+            if not testing:
+                reconstructedImages[idx + 1] = reconstructedImageNormalized
 
-            reconstructedImages[idx + 1] = reconstructedImageNormalized
+        if testing:
+            return reconstructedImageNormalized
 
         return reconstructedImages
 
@@ -174,9 +177,4 @@ class Tomograph:
         img, meta = self.converter.readDicomFile(path)
         return img, meta
 
-    def test(self):
-        pass
-
-    def runTest(self):
-        pass
 

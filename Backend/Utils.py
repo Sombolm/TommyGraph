@@ -25,3 +25,9 @@ class Utils:
         newCenter = (center[0] + radius, center[1] + radius)
         newRadius = self.getRadiusOfImage(paddedImage)
         return paddedImage, newCenter, newRadius
+
+    def calculateMSE(self, originalImage, reconstructedImage):
+        return np.square(np.subtract(originalImage, reconstructedImage)).mean()
+
+    def calculateRMSE(self, originalImage, reconstructedImage):
+        return np.sqrt(self.calculateMSE(originalImage, reconstructedImage))
