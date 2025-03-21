@@ -42,11 +42,12 @@ class Tomograph:
 
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
                        angularSpread: int, center: tuple, radiusX: int,radiusY: int, filter: bool) -> tuple:
-        sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
+        sinogram = np.zeros((int(360 // alpha), numberOfEmittersAndDetectors))
 
         linePointsDict = dict()
+        angles = np.linspace(0, 360, int(360 // alpha))
 
-        for idx,angle in enumerate(range(0, 360, alpha)):
+        for idx,angle in enumerate(angles):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radiusX, radiusY, center)
 
             for i in range(numberOfEmittersAndDetectors):
@@ -59,7 +60,7 @@ class Tomograph:
                     x, y = linePoints[:, j]
 
                     if 0 <= x < imageArray.shape[0] and 0 <= y < imageArray.shape[1]:
-                        sinogram[angle // alpha, i] += imageArray[x, y]
+                        sinogram[idx, i] += imageArray[x, y]
 
         if filter:
             sinogram = self.filter.filterSinogram(sinogram, self.kernel)
@@ -78,7 +79,8 @@ class Tomograph:
         reconstructedImage = np.zeros(image_size)
         reconstructedImages = dict()
 
-        for idx, angle in enumerate(range(0, 360, alpha)):
+        angles = np.linspace(0, 360, int(360 // alpha))
+        for idx, angle in enumerate(angles):
 
             for i in range(numberOfEmittersAndDetectors):
                 linePoints = linePointsDict[(angle, i)]
@@ -87,7 +89,7 @@ class Tomograph:
                     x, y = linePoints[:, j]
 
                     if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
-                        reconstructedImage[x, y] += sinogram[angle // alpha, i]
+                        reconstructedImage[x, y] += sinogram[idx, i]
 
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
@@ -146,7 +148,7 @@ class Tomograph:
 
         return sinograms, reconstructedImages, maxIter
     #TODO: DICOM
-    def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
+    def run(self, imageURL: str,alpha, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
             imageArray, saveAsDicom: bool, dicomParams: dict, savePath: str) -> tuple:
 
         if imageArray is None:

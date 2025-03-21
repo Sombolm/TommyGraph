@@ -28,7 +28,7 @@ class Tester:
 
         numberOfEmittersAndDetectorsRange = list(range(90, 720, 90))
         numberOfScansRange = list(range(90, 720, 90))
-        alphas = [alpha * 180 / numberOfScans for numberOfScans in numberOfScansRange]
+        alphas = [int(360 // i) for i in numberOfScansRange]
         angularSpreadRange = list(range(45, 270, 45))
         testing = True
 
