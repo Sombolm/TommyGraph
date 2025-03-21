@@ -81,6 +81,11 @@ class Tomograph:
         reconstructedImages = dict()
 
         angles = np.linspace(0, 360, int(360 // alpha))
+        if len(angles) <= 2:
+            percentiles = (30,90)
+        else:
+            percentiles = (40,80)
+
         for idx, angle in enumerate(angles):
 
             for i in range(numberOfEmittersAndDetectors):
@@ -94,7 +99,7 @@ class Tomograph:
 
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
-            low, high = np.percentile(reconstructedImageNormalized, (30,90))
+            low, high = np.percentile(reconstructedImageNormalized, percentiles)
             reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized, in_range=(low, high))
             if not testing:
                 reconstructedImages[idx + 1] = reconstructedImageNormalized
@@ -140,7 +145,7 @@ class Tomograph:
             sinogramDisplay[-i:, :] = sinogram[-i:, :]
             sinograms[i] = sinogramDisplay
 
-
+        ''''''
         plt.imshow(sinograms[maxIter], cmap='gray')
         plt.title('Sinogram')
         plt.show()
