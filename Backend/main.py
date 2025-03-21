@@ -7,4 +7,4 @@ tomograph.run("../ExampleImages/Kolo.jpg", 10, 180, 180, True, None,
     PatientID='001',
     ImageComments='Comment',
     StudyDate='20250321',
-), "../ExampleDICOM/test.jpg")
+), "../OutputImages/test.jpg")
