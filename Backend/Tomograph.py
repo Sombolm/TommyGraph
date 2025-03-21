@@ -3,7 +3,8 @@ from math import radians
 import numpy as np
 from matplotlib import pyplot as plt
 from numpy import ndarray
-from skimage.draw import line
+from skimage.draw import line, line_nd
+from skimage.exposure import exposure
 
 from Backend.Converter import Converter
 from Backend.Filter import Filter
@@ -36,7 +37,7 @@ class Tomograph:
 
 
     def bresenham(self, x1, y1, x2, y2) -> np.ndarray:
-        rr, cc = line(y1, x1, y2, x2)
+        rr, cc = line_nd((y1, x1), (y2, x2))
         return np.array([rr, cc])
 
 
@@ -93,6 +94,8 @@ class Tomograph:
 
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
+            low, high = np.percentile(reconstructedImageNormalized, (30,90))
+            reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized, in_range=(low, high))
             if not testing:
                 reconstructedImages[idx + 1] = reconstructedImageNormalized
 
