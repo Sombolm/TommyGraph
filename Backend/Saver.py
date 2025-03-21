@@ -15,6 +15,8 @@ from Backend.Converter import Converter
 class Saver:
 
     def saveMatrixAsJPG(self, matrix: np.ndarray, filePath: str) -> None:
+        matrix = (matrix - np.min(matrix)) / (np.max(matrix) - np.min(matrix)) * 255
+        matrix = matrix.astype(np.uint8)
         Image.fromarray(matrix).save(filePath)
 
     def saveAsDicomFile(self,path, image, dicomParams):

@@ -1,7 +1,7 @@
 from Backend.Tomograph import Tomograph
 
 tomograph = Tomograph()
-tomograph.run("../ExampleDICOM/Kropka.dcm", 10, 180, 180, True, None,
+tomograph.run("../ExampleImages/Kolo.jpg", 10, 180, 180, True, None,
               False, dict(
     PatientName='Test',
     PatientID='001',
