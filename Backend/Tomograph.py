@@ -144,7 +144,7 @@ class Tomograph:
         return sinograms, reconstructedImages, maxIter
     #TODO: DICOM
     def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
-            imageArray,meta, saveAsDicom: bool, dicomParams: dict, savePath: str) -> tuple:
+            imageArray, saveAsDicom: bool, dicomParams: dict, savePath: str) -> tuple:
 
         if imageArray is None:
             imageArray = self.converter.JPGtoMatrix(imageURL)
@@ -164,11 +164,19 @@ class Tomograph:
         sinogram, reconstructedImages, maxIter = self.packageImages(sinogram, reconstructedImages)
 
         if saveAsDicom:
-            self.saver.saveAsDicomFile(savePath, reconstructedImages[maxIter], meta, dicomParams)
+            self.saver.saveAsDicomFile(savePath, reconstructedImages[maxIter], dicomParams)
         else:
             self.saver.saveMatrixAsJPG(reconstructedImages[maxIter], savePath)
 
         return sinogram, reconstructedImages
 
+    def viewDicom(self, path: str):
+        img, meta = self.converter.readDicomFile(path)
+        return img, meta
 
+    def test(self):
+        pass
+
+    def runTest(self):
+        pass
 
