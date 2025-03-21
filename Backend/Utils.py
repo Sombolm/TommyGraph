@@ -13,9 +13,6 @@ class Utils:
         paddedImage = np.zeros((max(imageArray.shape), max(imageArray.shape)))
         paddedImage[:imageArray.shape[0], :imageArray.shape[1]] = imageArray
 
-        #plot the padded image
-        plt.imshow(paddedImage, cmap='gray')
-        plt.show()
         return paddedImage
 
     def padImageForCircle(self, imageArray: np.ndarray, center: tuple, radius: int):
@@ -24,6 +21,7 @@ class Utils:
 
         newCenter = (center[0] + radius, center[1] + radius)
         newRadius = self.getRadiusOfImage(paddedImage)
+
         return paddedImage, newCenter, newRadius
 
     def calculateMSE(self, originalImage, reconstructedImage):
