@@ -4,7 +4,6 @@ from scipy.fftpack import fft, ifft, fftfreq
 
 class Filter:
 
-    #TODO: Implement this method
     def createFilter(self,size=21):
         k = np.arange(-size // 2, size // 2 + 1)
         kernel = np.zeros_like(k, dtype=np.float32)
