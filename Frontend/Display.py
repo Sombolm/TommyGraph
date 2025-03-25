@@ -1,6 +1,54 @@
 import flet as ft
 from Frontend.Fileselector import FileSelector
 from Backend.Tomograph import Tomograph
+from flet.matplotlib_chart import MatplotlibChart
+import matplotlib.pyplot as plt
+
+# global
+plotData = [{}, {}]
+sinogram = ft.Container(width=400, height=400)
+reconstructedImages = ft.Container(width=400, height=400)
+currentIteration = 1
+maxIteration = 1
+iterSliderContainer = ft.Container()
+
+def get_slider(isVisible):
+    global maxIteration
+
+    def slider_changed(e):
+        global currentIteration, sinogram, reconstructedImages, plotData
+        currentIteration = int(e.control.value)
+
+        sinogram.content = draw_plt_image(plotData[0], currentIteration)
+        reconstructedImages.content = draw_plt_image(plotData[1], currentIteration)
+
+        sinogram.update()
+        reconstructedImages.update()
+
+    slider = ft.Slider(
+        min=1, max=maxIteration, divisions=maxIteration - 1, label="{value}",
+        on_change_end=slider_changed, value=maxIteration, width=600
+    )
+
+    return ft.Column(
+        controls=[ft.Text("View iteration:", size=15, bgcolor=ft.Colors.GREEN_200), slider],
+        visible=isVisible,
+        expand=True
+    )
+
+def draw_plt_image(imgSource, iteration):
+    fig, ax = plt.subplots(figsize=(8, 8), tight_layout=True)
+    ax.imshow(imgSource[iteration], cmap='gray')
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_frame_on(False)
+
+    fig.patch.set_alpha(0)
+    ax.set_facecolor("none")
+
+    chart = MatplotlibChart(fig)
+    return chart
 
 def get_details_field():
     def save_as_dicom():
@@ -41,6 +89,9 @@ def get_details_field():
 def get_appbar(page: ft.Page, fileSelector: FileSelector):
     # Appbar functions------------------
     def run_tomograph(e, alpha, numEmittersDetectors, angSpread, isFiltered):
+        global plotData, sinogram, reconstructedImages, \
+            maxIteration, currentIteration, iterSliderContainer
+
         tomograph = Tomograph()
 
         def validate_parameters(param):
@@ -56,27 +107,39 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector):
         angSpread = validate_parameters(angSpread)
 
         if not alpha or not numEmittersDetectors or not angSpread:
-            return None
+            return
 
         runButton.visible = False
         loader.visible = True
         page.update()
 
         try:
-            tomograph.run(fileSelector.selectedFilePath, alpha, numEmittersDetectors,
-                          angSpread, isFiltered)
+            plotData[0], plotData[1] = tomograph.run(fileSelector.selectedFilePath, alpha,
+                                                                  numEmittersDetectors, angSpread, isFiltered)
+            # Pierwsze rysowanie po uruchomieniu pliku
+            maxIteration = max(plotData[0].keys())
+            currentIteration = maxIteration
+
+            sinogram.content = draw_plt_image(plotData[0], currentIteration)
+            reconstructedImages.content = draw_plt_image(plotData[1], currentIteration)
+
+            iterSliderContainer.content = get_slider(True)
+
+            iterSliderContainer.update()
+            sinogram.update()
+            reconstructedImages.update()
         except:
-            page.open(alertDialogNoFileSelected)
+            page.open(alertDialogTomographRun)
 
         runButton.visible = True
         loader.visible = False
         page.update()
 
     # Appbar components----------------
-
-    alertDialogNoFileSelected = ft.AlertDialog(
+    alertDialogTomographRun = ft.AlertDialog(
         title=ft.Text("Error"),
-        content=ft.Text("No .jpg file selected", color=ft.colors.BLACK)
+        content=ft.Text("There was an error in the tomograph process",
+                        color=ft.colors.BLACK)
     )
 
     alertDialogBadInput = ft.AlertDialog(
@@ -144,16 +207,19 @@ def set_page_properties(page: ft.Page, fileSelector: FileSelector):
                               body_medium=ft.TextStyle(font_family="Roboto")))
     page.appbar = get_appbar(page, fileSelector)
 
-
 def draw(page: ft.Page):
+    global sinogram, reconstructedImages, currentIteration, maxIteration, iterSlider
+
     fileSelector = FileSelector(page)
     set_page_properties(page, fileSelector)
-
     expansionDetailsTile = get_details_field()
 
     leftColumn = ft.Container(
         content=ft.Column(
-            [expansionDetailsTile],
+            [fileSelector.image,
+             ft.Text("Source Image", bgcolor=ft.Colors.GREEN_200),
+             expansionDetailsTile],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             expand=True
         ),
         width=350,
@@ -162,11 +228,45 @@ def draw(page: ft.Page):
 
     mainContent = ft.Container(
         content=ft.Column(
-            [fileSelector.image],
-            alignment=ft.MainAxisAlignment.START,
+            [
+                ft.Row(
+                    [
+                        ft.Column(
+                            [
+                                sinogram,
+                                ft.Text("Sinogram", size=20,
+                                        bgcolor=ft.Colors.GREEN_200),
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            expand=True
+                        ),
+                        ft.Column(
+                            [
+                                reconstructedImages,
+                                ft.Text("Reconstructed Image", size=20,
+                                        bgcolor=ft.Colors.GREEN_200)
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            expand=True
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+                ft.Container(height=10),
+
+                ft.Row(
+                    [
+                        iterSliderContainer
+                    ],
+                    expand=True
+                )
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
         ),
         expand=True,
-        padding=20
+        padding=10
     )
 
     layout = ft.Row(
@@ -175,7 +275,4 @@ def draw(page: ft.Page):
     )
 
     page.add(layout)
-
-    # expansionDetailsTile = get_details_field()
-    # page.add(expansionDetailsTile)
     page.update()

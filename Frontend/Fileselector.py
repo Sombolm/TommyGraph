@@ -9,9 +9,9 @@ class FileSelector:
         self.fileName = ft.Text("Select File")
         page.overlay.append(self.filePicker)
         self.image = ft.Image(
-            src="",
-            width=300,
-            height=300,
+            src="../ExampleImages/Default.jpg",
+            width=200,
+            height=200,
             fit=ft.ImageFit.CONTAIN
         )
 
