@@ -114,8 +114,13 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector):
         page.update()
 
         try:
-            plotData[0], plotData[1] = tomograph.run(fileSelector.selectedFilePath, alpha,
-                                                                  numEmittersDetectors, angSpread, isFiltered)
+            if fileSelector.isDcm == False:
+                plotData[0], plotData[1] = tomograph.run(fileSelector.selectedFilePath, alpha,
+                                                                      numEmittersDetectors, angSpread, isFiltered)
+            else:
+                plotData[0], plotData[1] = tomograph.run(fileSelector.selectedFilePath, alpha,
+                                                         numEmittersDetectors, angSpread, isFiltered, imageArray=fileSelector.imageDcm)
+
             # Pierwsze rysowanie po uruchomieniu pliku
             maxIteration = max(plotData[0].keys())
             currentIteration = maxIteration
