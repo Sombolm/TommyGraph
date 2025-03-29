@@ -216,7 +216,7 @@ def draw(page: ft.Page):
 
     leftColumn = ft.Container(
         content=ft.Column(
-            [fileSelector.image,
+            [fileSelector.imageContainer,
              ft.Text("Source Image", bgcolor=ft.Colors.GREEN_200),
              expansionDetailsTile],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,

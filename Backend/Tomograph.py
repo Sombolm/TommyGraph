@@ -136,13 +136,13 @@ class Tomograph:
             sinograms[i] = sinogramDisplay
 
 
-        plt.imshow(sinograms[maxIter], cmap='gray')
-        plt.title('Sinogram')
-        plt.show()
-
-        plt.imshow(reconstructedImages[maxIter], cmap='gray')
-        plt.title('Reconstructed Image')
-        plt.show()
+        # plt.imshow(sinograms[maxIter], cmap='gray')
+        # plt.title('Sinogram')
+        # plt.show()
+        #
+        # plt.imshow(reconstructedImages[maxIter], cmap='gray')
+        # plt.title('Reconstructed Image')
+        # plt.show()
 
         return sinograms, reconstructedImages, maxIter
     #TODO: DICOM
