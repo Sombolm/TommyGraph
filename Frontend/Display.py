@@ -50,12 +50,58 @@ def draw_plt_image(imgSource, iteration):
     chart = MatplotlibChart(fig)
     return chart
 
-def get_details_field():
-    def save_as_dicom():
-        return
+def get_details_field(fileSelector: FileSelector):
+    def save_as_dicom(e):
+        print("Saving as DICOM:")
+        print(f"PatientName: {nameField.value}")
+        print(f"PatientID: {patientIdField.value}")
+        print(f"ImageComments: {commentField.value}")
+        print(f"StudyDate: {dateField.value}")
 
-    saveButton = ft.ElevatedButton("Save as DICOM", on_click=save_as_dicom())
-    patientDetails = ft.Text("No patient details yet.")
+    def update_fields(meta):
+        nameField.value = meta['PatientName']
+        patientIdField.value = meta['PatientID']
+        commentField.value = meta['ImageComments']
+        dateField.value = meta['StudyDate']
+
+        nameField.update()
+        patientIdField.update()
+        commentField.update()
+        dateField.update()
+
+    fileSelector.on_meta_update = update_fields
+
+    textFieldColor = "white"
+
+    nameValue = fileSelector.meta['PatientName']
+    patientIdValue = fileSelector.meta['PatientID']
+    commentValue = fileSelector.meta['ImageComments']
+    dateValue = fileSelector.meta['StudyDate']
+
+    nameField = ft.TextField(label="Patient Name", value=nameValue, width=280,
+                             color=textFieldColor, border_color=textFieldColor,
+                             label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
+    patientIdField = ft.TextField(label="Patient ID", value=patientIdValue, width=280,
+                                  color=textFieldColor, border_color=textFieldColor,
+                                  label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
+    commentField = ft.TextField(label="Image Comments", value=commentValue, width=280,
+                                color=textFieldColor, border_color=textFieldColor,
+                                label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
+    dateField = ft.TextField(label="Study Date", value=dateValue, width=280,
+                             color=textFieldColor, border_color=textFieldColor,
+                             label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
+
+    saveButton = ft.ElevatedButton("Save as DICOM", on_click=save_as_dicom, disabled=True)
+
+    patientDetails = ft.Column(
+        controls=[
+            nameField,
+            patientIdField,
+            commentField,
+            dateField
+        ],
+        spacing=10
+    )
 
     expansionDetailsTile = ft.ExpansionTile(
         title=ft.Text(
@@ -80,17 +126,14 @@ def get_details_field():
             )
         ],
         width=300,
-        # NOTE: should be false on deploy
         visible=True
     )
 
-    return expansionDetailsTile
+    return expansionDetailsTile, saveButton
 
-def get_appbar(page: ft.Page, fileSelector: FileSelector):
-    # Appbar functions------------------
-    def run_tomograph(e, alpha, numEmittersDetectors, angSpread, isFiltered):
-        global plotData, sinogram, reconstructedImages, \
-            maxIteration, currentIteration, iterSliderContainer
+def get_appbar(page: ft.Page, fileSelector: FileSelector, saveButton: ft.ElevatedButton):
+    def run_tomograph(e, alpha, numEmittersDetectors, angSpread, isFiltered, saveButton):
+        global plotData, sinogram, reconstructedImages, maxIteration, currentIteration, iterSliderContainer
 
         tomograph = Tomograph()
 
@@ -113,26 +156,31 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector):
         loader.visible = True
         page.update()
 
+        saveButton.disabled = True
+        saveButton.update()
+
         try:
             if fileSelector.isDcm == False:
                 plotData[0], plotData[1] = tomograph.run(fileSelector.selectedFilePath, alpha,
-                                                                      numEmittersDetectors, angSpread, isFiltered)
+                                                         numEmittersDetectors, angSpread, isFiltered)
             else:
                 plotData[0], plotData[1] = tomograph.run(fileSelector.selectedFilePath, alpha,
-                                                         numEmittersDetectors, angSpread, isFiltered, imageArray=fileSelector.imageDcm)
+                                                         numEmittersDetectors, angSpread, isFiltered,
+                                                         imageArray=fileSelector.imageDcm)
 
-            # Pierwsze rysowanie po uruchomieniu pliku
             maxIteration = max(plotData[0].keys())
             currentIteration = maxIteration
 
             sinogram.content = draw_plt_image(plotData[0], currentIteration)
             reconstructedImages.content = draw_plt_image(plotData[1], currentIteration)
-
             iterSliderContainer.content = get_slider(True)
 
             iterSliderContainer.update()
             sinogram.update()
             reconstructedImages.update()
+
+            saveButton.disabled = False
+            saveButton.update()
         except:
             page.open(alertDialogTomographRun)
 
@@ -140,11 +188,9 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector):
         loader.visible = False
         page.update()
 
-    # Appbar components----------------
     alertDialogTomographRun = ft.AlertDialog(
         title=ft.Text("Error"),
-        content=ft.Text("There was an error in the tomograph process",
-                        color=ft.colors.BLACK)
+        content=ft.Text("There was an error in the tomograph process", color=ft.colors.BLACK)
     )
 
     alertDialogBadInput = ft.AlertDialog(
@@ -160,16 +206,18 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector):
 
     runButton = ft.IconButton(
         icon=ft.Icons.PLAY_ARROW_OUTLINED,
-        on_click=lambda e: run_tomograph(e, isFiltered=filteredCheckbox.value,
-                                         alpha=paramAlpha.value,
-                                         numEmittersDetectors=paramNumEmittersDetectors.value,
-                                         angSpread=paramAngSpread.value
-                                         )
+        on_click=lambda e: run_tomograph(
+            e,
+            isFiltered=filteredCheckbox.value,
+            alpha=paramAlpha.value,
+            numEmittersDetectors=paramNumEmittersDetectors.value,
+            angSpread=paramAngSpread.value,
+            saveButton=saveButton
+        )
     )
 
     loader = ft.ProgressRing(visible=False)
 
-    # Appbar-------------------------
     appbar = ft.AppBar(
         bgcolor=ft.colors.GREEN_300,
         title=ft.Row(
@@ -203,21 +251,21 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector):
 
     return appbar
 
-def set_page_properties(page: ft.Page, fileSelector: FileSelector):
+def set_page_properties(page: ft.Page, fileSelector: FileSelector, saveButton: ft.ElevatedButton):
     page.title = "TommyGraph"
     page.theme_mode = "light"
     page.bgcolor = ft.Colors.GREEN_100
     page.theme = ft.Theme(color_scheme_seed=ft.Colors.GREEN,
                           text_theme=ft.TextTheme(
                               body_medium=ft.TextStyle(font_family="Roboto")))
-    page.appbar = get_appbar(page, fileSelector)
+    page.appbar = get_appbar(page, fileSelector, saveButton)
 
 def draw(page: ft.Page):
     global sinogram, reconstructedImages, currentIteration, maxIteration, iterSlider
 
     fileSelector = FileSelector(page)
-    set_page_properties(page, fileSelector)
-    expansionDetailsTile = get_details_field()
+    expansionDetailsTile, saveButton = get_details_field(fileSelector)
+    set_page_properties(page, fileSelector, saveButton)
 
     leftColumn = ft.Container(
         content=ft.Column(
@@ -239,8 +287,7 @@ def draw(page: ft.Page):
                         ft.Column(
                             [
                                 sinogram,
-                                ft.Text("Sinogram", size=20,
-                                        bgcolor=ft.Colors.GREEN_200),
+                                ft.Text("Sinogram", size=20, bgcolor=ft.Colors.GREEN_200),
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -249,8 +296,7 @@ def draw(page: ft.Page):
                         ft.Column(
                             [
                                 reconstructedImages,
-                                ft.Text("Reconstructed Image", size=20,
-                                        bgcolor=ft.Colors.GREEN_200)
+                                ft.Text("Reconstructed Image", size=20, bgcolor=ft.Colors.GREEN_200)
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -260,13 +306,7 @@ def draw(page: ft.Page):
                     alignment=ft.MainAxisAlignment.CENTER,
                 ),
                 ft.Container(height=10),
-
-                ft.Row(
-                    [
-                        iterSliderContainer
-                    ],
-                    expand=True
-                )
+                ft.Row([iterSliderContainer], expand=True)
             ],
             alignment=ft.MainAxisAlignment.CENTER,
         ),
@@ -274,10 +314,6 @@ def draw(page: ft.Page):
         padding=10
     )
 
-    layout = ft.Row(
-        [leftColumn, mainContent],
-        expand=True
-    )
-
+    layout = ft.Row([leftColumn, mainContent], expand=True)
     page.add(layout)
     page.update()
