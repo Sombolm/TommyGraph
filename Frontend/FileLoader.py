@@ -4,7 +4,7 @@ import Backend.Converter as Converter
 import os
 import matplotlib.pyplot as plt
 
-class FileSelector:
+class FileLoader:
 
     def __init__(self, page: ft.Page):
         self.page = page

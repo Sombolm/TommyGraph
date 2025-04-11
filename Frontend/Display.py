@@ -1,5 +1,6 @@
 import flet as ft
-from Frontend.Fileselector import FileSelector
+from Frontend.FileLoader import FileLoader
+from Frontend.FileSaver import FileSaver
 from Backend.Tomograph import Tomograph
 from flet.matplotlib_chart import MatplotlibChart
 import matplotlib.pyplot as plt
@@ -50,13 +51,17 @@ def draw_plt_image(imgSource, iteration):
     chart = MatplotlibChart(fig)
     return chart
 
-def get_details_field(fileSelector: FileSelector):
+def get_details_field(fileSaver: FileSaver, fileSelector: FileLoader):
     def save_as_dicom(e):
-        print("Saving as DICOM:")
-        print(f"PatientName: {nameField.value}")
-        print(f"PatientID: {patientIdField.value}")
-        print(f"ImageComments: {commentField.value}")
-        print(f"StudyDate: {dateField.value}")
+        currentImage = plotData[1][currentIteration]
+        dicomParams = {
+            'PatientName': nameField.value,
+            'PatientID': patientIdField.value,
+            'ImageComments': commentField.value,
+            'StudyDate': dateField.value,
+        }
+        fileSaver.set_data(currentImage, dicomParams)
+        fileSaver.pick_file()
 
     def update_fields(meta):
         nameField.value = meta['PatientName']
@@ -131,7 +136,7 @@ def get_details_field(fileSelector: FileSelector):
 
     return expansionDetailsTile, saveButton
 
-def get_appbar(page: ft.Page, fileSelector: FileSelector, saveButton: ft.ElevatedButton):
+def get_appbar(page: ft.Page, fileSelector: FileLoader, saveButton: ft.ElevatedButton):
     def run_tomograph(e, alpha, numEmittersDetectors, angSpread, isFiltered, saveButton):
         global plotData, sinogram, reconstructedImages, maxIteration, currentIteration, iterSliderContainer
 
@@ -251,7 +256,7 @@ def get_appbar(page: ft.Page, fileSelector: FileSelector, saveButton: ft.Elevate
 
     return appbar
 
-def set_page_properties(page: ft.Page, fileSelector: FileSelector, saveButton: ft.ElevatedButton):
+def set_page_properties(page: ft.Page, fileSelector: FileLoader, saveButton: ft.ElevatedButton):
     page.title = "TommyGraph"
     page.theme_mode = "light"
     page.bgcolor = ft.Colors.GREEN_100
@@ -263,8 +268,10 @@ def set_page_properties(page: ft.Page, fileSelector: FileSelector, saveButton: f
 def draw(page: ft.Page):
     global sinogram, reconstructedImages, currentIteration, maxIteration, iterSlider
 
-    fileSelector = FileSelector(page)
-    expansionDetailsTile, saveButton = get_details_field(fileSelector)
+    fileSelector = FileLoader(page)
+    fileSaver = FileSaver(page)
+
+    expansionDetailsTile, saveButton = get_details_field(fileSaver, fileSelector)
     set_page_properties(page, fileSelector, saveButton)
 
     leftColumn = ft.Container(
