@@ -2,7 +2,6 @@ from math import radians
 
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy import ndarray
 from skimage.draw import line
 
 from Backend.Converter import Converter
@@ -145,31 +144,21 @@ class Tomograph:
         # plt.show()
 
         return sinograms, reconstructedImages, maxIter
-    #TODO: DICOM
+
     def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
-            imageArray=None, saveAsDicom: bool=False, dicomParams: dict=None, savePath: str=None) -> tuple:
+            imageArray=None) -> tuple:
 
         if imageArray is None:
             imageArray = self.converter.JPGtoMatrix(imageURL)
 
-
         center = self.utils.getCenterOfImage(imageArray)
         radiusY, radiusX = self.utils.getRadiusOfImage(imageArray)
-
-        #paddedImage, newCenter, newRadius = self.utils.padImageForCircle(imageArray, center, radius)
-
 
         linePointsDict, sinogram = self.createSinogram(imageArray, alpha, numberOfEmittersAndDetectors, angularSpread, center, radiusX, radiusY, filterSinogram)
 
         reconstructedImages = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, radiusX, radiusY, linePointsDict)
 
-        #self.displayImagesMatPlotLib(sinogram, reconstructedImages)
         sinogram, reconstructedImages, maxIter = self.packageImages(sinogram, reconstructedImages)
-
-        if saveAsDicom:
-            self.saver.saveAsDicomFile(savePath, reconstructedImages[maxIter], dicomParams)
-        elif savePath is not None:
-            self.saver.saveMatrixAsJPG(reconstructedImages[maxIter], savePath)
 
         return sinogram, reconstructedImages
 

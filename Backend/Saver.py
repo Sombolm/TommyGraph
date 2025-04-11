@@ -1,16 +1,9 @@
-import datetime
-
 import numpy as np
-import pydicom
 from PIL import Image
-from matplotlib.testing.compare import converter
-from pydicom import Dataset, FileDataset, FileMetaDataset
+from pydicom import FileDataset, FileMetaDataset
 from pydicom.dataset import validate_file_meta
 from pydicom.uid import generate_uid, CTImageStorage
 from pydicom.util.leanread import ExplicitVRLittleEndian
-
-from Backend.Converter import Converter
-
 
 class Saver:
 
@@ -68,19 +61,3 @@ class Saver:
         ds.PixelData = image.astype(np.uint16).tobytes()
 
         ds.save_as(path)
-'''
-saver = Saver()
-converter = Converter()
-img, meta = converter.readDicomFile("../ExampleDICOM/Kropka.dcm")
-#img = converter.convertImageToUbyte(img)
-
-saver.saveAsDicomFile("../ExampleImages/Kropka2.dcm", img, dict(
-    PatientName='Test',
-    PatientID='001',
-    ImageComments='Comment',
-    StudyDate='20250321',
-))
-
-image, meta = converter.readDicomFile("../ExampleImages/Kropka2.dcm")
-
-print(meta)'''
