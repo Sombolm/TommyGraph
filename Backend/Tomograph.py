@@ -41,7 +41,7 @@ class Tomograph:
         return np.array([rr, cc])
 
     # Tworzenie sinogram z obrazu wejściowego przez obliczenie sum pikseli dla każdej pary emiter-detektor
-    def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
+    def createSinogram(self, imageArray: np.ndarray, alpha, numberOfEmittersAndDetectors: int,
                        angularSpread: int, center: tuple, radiusX: int,radiusY: int, filter: bool) -> tuple:
         sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors)) # Inicjalizacja sinogramu
 
@@ -74,7 +74,7 @@ class Tomograph:
     # Dla każdego rzędu sinogramu (kąta) symuluje odwrotny rzut
     # Odtwarza promień przez obraz i dodaje wartość z sinogramu wzdłuż linii
     # Sumowanie wszystkich takich rzutów daje końcową rekonstrukcję
-    def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
+    def createReconstruction(self, sinogram: np.ndarray, alpha, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
                              linePointsDict: dict, testing=False):
 
         image_size = (radiusY * 2, radiusX * 2) # Rozmiar wynikowego obrazu

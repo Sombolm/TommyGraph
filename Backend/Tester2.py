@@ -45,7 +45,7 @@ class Tester:
         rmse_values = []
 
         for scan_count in scans_range:
-            alpha = 360 // scan_count
+            alpha = 360 / scan_count
             lines, sinogram = self.tomograph.createSinogram(
                 image_array, alpha, number_of_detectors, angular_spread, center, radius_x, radius_y, filter_sinogram
             )
