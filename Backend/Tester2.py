@@ -138,7 +138,7 @@ class Tester:
                 image_array, alpha, detectors, spread, center, radius_x, radius_y, filter=True
             )
             recon_f = self.tomograph.createReconstruction(sinogram_f, alpha, detectors, radius_x, radius_y, lines_f,
-                                                          testing=True)
+                                                          testing=True, isFiltered=True)
 
             # Bez filtra
             lines_nf, sinogram_nf = self.tomograph.createSinogram(

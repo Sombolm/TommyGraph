@@ -78,7 +78,7 @@ class Tomograph:
     # Odtwarza promień przez obraz i dodaje wartość z sinogramu wzdłuż linii
     # Sumowanie wszystkich takich rzutów daje końcową rekonstrukcję
     def createReconstruction(self, sinogram: np.ndarray, alpha, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
-                             linePointsDict: dict, testing=False):
+                             linePointsDict: dict, testing=False, isFiltered=False):
 
         imageSize = (radiusY * 2, radiusX * 2) # Rozmiar obrazu
         reconstructedImage = np.zeros(imageSize)
@@ -103,12 +103,19 @@ class Tomograph:
             # Normalizacja do zakresu 0-255
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
-            # Przeskalowanie nasycenia obrazu
-            low = percentiles[0] / 100 * np.max(reconstructedImageNormalized)
-            high = percentiles[1] / 100 * np.max(reconstructedImageNormalized)
 
-            reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
-                                                                      in_range=(low, high))
+            # Przeskalowanie intensywności kolorów obrazu
+            if isFiltered:
+                low = percentiles[0] / 100 * np.max(reconstructedImageNormalized)
+                high = percentiles[1] / 100 * np.max(reconstructedImageNormalized)
+                reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
+                                                                          in_range=(low, high))
+            else:
+                low = percentiles[0] - 25 / 100 * np.max(reconstructedImageNormalized)
+                high = percentiles[1] + 5 / 100 * np.max(reconstructedImageNormalized)
+                reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
+                                                                          in_range=(low, high))
+
             if not testing:
                 reconstructedImages[idx + 1] = reconstructedImageNormalized
 
@@ -171,7 +178,7 @@ class Tomograph:
 
         linePointsDict, sinogram = self.createSinogram(imageArray, alpha, numberOfEmittersAndDetectors, angularSpread, center, radiusX, radiusY, filterSinogram)
 
-        reconstructedImages = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, radiusX, radiusY, linePointsDict)
+        reconstructedImages = self.createReconstruction(sinogram, alpha, numberOfEmittersAndDetectors, radiusX, radiusY, linePointsDict, isFiltered=filterSinogram)
 
         sinogram, reconstructedImages, maxIter = self.packageImages(sinogram, reconstructedImages)
 
