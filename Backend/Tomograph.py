@@ -65,7 +65,7 @@ class Tomograph:
                     x, y = linePoints[:, j]
 
                     if 0 <= x < imageArray.shape[0] and 0 <= y < imageArray.shape[1]:
-                        sinogram[angle // alpha, i] += imageArray[x, y]
+                        sinogram[idx, i] += imageArray[x, y]
 
         # Jeśli wybrano filtrację, stosujemy ją
         if filter:
@@ -80,8 +80,8 @@ class Tomograph:
     def createReconstruction(self, sinogram: np.ndarray, alpha, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
                              linePointsDict: dict, testing=False):
 
-        image_size = (radiusY * 2, radiusX * 2) # Rozmiar wynikowego obrazu
-        reconstructedImage = np.zeros(image_size)
+        imageSize = (radiusY * 2, radiusX * 2) # Rozmiar obrazu
+        reconstructedImage = np.zeros(imageSize)
         reconstructedImages = dict()
 
         angles = np.linspace(0, 360, int(360 // alpha))
@@ -99,8 +99,8 @@ class Tomograph:
                 for j in range(linePoints.shape[1]):
                     x, y = linePoints[:, j]
 
-                    if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
-                        reconstructedImage[x, y] += sinogram[angle // alpha, i]
+                    if 0 <= x < imageSize[0] and 0 <= y < imageSize[1]:
+                        reconstructedImage[x, y] += sinogram[idx, i]
 
             # Normalizacja do zakresu 0-255
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
