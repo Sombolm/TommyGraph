@@ -1,13 +1,15 @@
 from Backend.Tomograph import Tomograph
 from Backend.Utils import Utils
+from Backend.Converter import Converter
 
 
 class Tester:
     def __init__(self):
         self.tomograph = Tomograph()
         self.utils = Utils()
+        self.converter = Converter()
 
-    def testMSEForIterations(self, imageArray, alpha, numberOfEmittersAndDetectors, angularSpread,center, radiusX, radiusY, filterSinogram = False):
+    def testMSEForIterations(self, imageArray, alpha, numberOfEmittersAndDetectors, angularSpread, center, radiusX, radiusY, filterSinogram = False):
 
         linePointsDict, sinogram = self.tomograph.createSinogram(imageArray, alpha, numberOfEmittersAndDetectors, angularSpread,
                                                        center, radiusX, radiusY, filterSinogram)
@@ -102,8 +104,6 @@ class Tester:
         print("RMSE: " + str(rmse))
 
     def runTests(self, imageURL, alpha, numberOfEmittersAndDetectors, angularSpread, filterSinogram = False):
-
-
         imageArray = self.converter.JPGtoMatrix(imageURL)
         center = self.utils.getCenterOfImage(imageArray)
         radiusY, radiusX = self.utils.getRadiusOfImage(imageArray)
@@ -122,12 +122,11 @@ class Tester:
         #test3
         self.testFiltering(imageArray, alpha, numberOfEmittersAndDetectors, angularSpread, center, radiusX, radiusY, True)
 
-
-
     pass
 
 if __name__ == '__main__':
-    imageURL = "../ExampleDICOM/Kropka.dcm"
+    imageURL = "../ExampleImages/Shepp_logan.jpg" # Badany Obraz
+    # Domyślne parametry
     alpha = 2
     numberOfEmittersAndDetectors = 180
     angularSpread = 180
