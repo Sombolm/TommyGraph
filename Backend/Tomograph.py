@@ -86,10 +86,7 @@ class Tomograph:
 
         angles = np.linspace(0, 360, int(360 // alpha))
         # Rozwiązanie czysto wizualne dla poprawy nasycenia
-        if len(angles) <= 2:
-            percentiles = (30, 90)
-        else:
-            percentiles = (40, 80)
+        percentiles = (30, 90)
 
         for idx, angle in enumerate(angles):
 
@@ -107,7 +104,9 @@ class Tomograph:
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
             # Przeskalowanie nasycenia obrazu
-            low, high = np.percentile(reconstructedImageNormalized, percentiles)
+            low = percentiles[0] / 100 * np.max(reconstructedImageNormalized)
+            high = percentiles[1] / 100 * np.max(reconstructedImageNormalized)
+
             reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
                                                                       in_range=(low, high))
             if not testing:
