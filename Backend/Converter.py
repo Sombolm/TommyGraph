@@ -6,9 +6,12 @@ from skimage.util import img_as_ubyte
 
 
 class Converter:
+    # Translacja pliku o formacie .jpg na format sprzyjający przetwarzaniu
     def JPGtoMatrix(self, filePath: str) -> np.ndarray:
         return np.array(Image.open(filePath).convert('L'))
 
+    # Translacja pliku o formacie .dcm na format sprzyjający przetwarzaniu
+    # Rozdzielenie zawartości na część odpowiedzialną za obraz i za metadane
     def readDicomFile(self, path):
         dicom = dcmread(path)
 

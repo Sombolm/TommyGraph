@@ -1,6 +1,4 @@
 import numpy as np
-from matplotlib import pyplot as plt
-
 
 class Utils:
     def getCenterOfImage(self,array):

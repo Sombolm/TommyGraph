@@ -1,12 +1,9 @@
 from math import radians
-
 import numpy as np
 from matplotlib import pyplot as plt
 from skimage.draw import line
-
 from Backend.Converter import Converter
 from Backend.Filter import Filter
-from Backend.Saver import Saver
 from Backend.Utils import Utils
 
 class Tomograph:
@@ -14,9 +11,10 @@ class Tomograph:
         self.converter = Converter()
         self.utils = Utils()
         self.filter = Filter()
-        self.saver = Saver()
-        self.kernel = self.filter.createFilter(21)
+        self.kernel = self.filter.createFilter(21) # Tworzymy filtr (rozmiar 21)
 
+    # Obliczanie pozycji emiterów i detektorów dla danego kąta obrotu tomografu
+    # Emitery i detektory są symetryczne względem środka obrazu i obejmują zadany kąt angularSpread
     def getEmitterAndDetectorPoints(self, angle: int, numberOfEmittersAndDetectors: int, angularSpread: int, radiusX: int, radiusY, center: tuple):
         def calculatePoints(angle: float, numberOfEmittersAndDetectors: int, angularSpread: float, radiusX: int, radiusY: int ,center: tuple):
             points = []
@@ -30,20 +28,24 @@ class Tomograph:
 
             return np.array(points)
 
+        # Generowanie punktów dla emiterów i detektorów – detektory są naprzeciwko emiterów, model równoległy
+        # Użycie radians(...) pozwala pracować w układzie biegunowym
         return (calculatePoints(radians(angle - angularSpread / 2), numberOfEmittersAndDetectors, radians(angularSpread), radiusX, radiusY, center),
             calculatePoints(radians(angle - angularSpread / 2 + 180), numberOfEmittersAndDetectors, radians(angularSpread), radiusX, radiusY, center)[::-1])
 
-
+    # Zwracanie wszystkich pikseli na linii między dwoma punktami
+    # (na podobieństwo algorytmu Bresenhama)
+    # W naszym scenariuszu badamy pary emiter-detektor
     def bresenham(self, x1, y1, x2, y2) -> np.ndarray:
         rr, cc = line(y1, x1, y2, x2)
         return np.array([rr, cc])
 
-
+    # Tworzenie sinogram z obrazu wejściowego przez obliczenie sum pikseli dla każdej pary emiter-detektor
     def createSinogram(self, imageArray: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int,
                        angularSpread: int, center: tuple, radiusX: int,radiusY: int, filter: bool) -> tuple:
-        sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors))
+        sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors)) # Inicjalizacja sinogramu
 
-        linePointsDict = dict()
+        linePointsDict = dict() # Słownik do przechowywania wszystkich linii dla późniejszej rekonstrukcji
 
         for idx,angle in enumerate(range(0, 360, alpha)):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radiusX, radiusY, center)
@@ -54,26 +56,28 @@ class Tomograph:
 
                 linePoints = self.bresenham(emitter[0], emitter[1], detector[0], detector[1])
                 linePointsDict[(angle, i)] = linePoints
+
+                # Sumujemy intensywność pikseli wzdłuż każdej linii
                 for j in range(linePoints.shape[1]):
                     x, y = linePoints[:, j]
 
                     if 0 <= x < imageArray.shape[0] and 0 <= y < imageArray.shape[1]:
                         sinogram[angle // alpha, i] += imageArray[x, y]
 
+        # Jeśli wybrano filtrację, stosujemy ją
         if filter:
             sinogram = self.filter.filterSinogram(sinogram, self.kernel)
 
-
-            #plt.imshow(sinogram, cmap='gray')
-            #plt.show()
-
-
         return linePointsDict, sinogram
 
+    # Tworzenie rekonstrukcji obrazu
+    # Dla każdego rzędu sinogramu (kąta) symuluje odwrotny rzut
+    # Odtwarza promień przez obraz i dodaje wartość z sinogramu wzdłuż linii
+    # Sumowanie wszystkich takich rzutów daje końcową rekonstrukcję
     def createReconstruction(self, sinogram: np.ndarray, alpha: int, numberOfEmittersAndDetectors: int, radiusX: int, radiusY: int,
                              linePointsDict: dict, testing=False):
 
-        image_size = (radiusY * 2, radiusX * 2)
+        image_size = (radiusY * 2, radiusX * 2) # Rozmiar wynikowego obrazu
         reconstructedImage = np.zeros(image_size)
         reconstructedImages = dict()
 
@@ -82,17 +86,21 @@ class Tomograph:
             for i in range(numberOfEmittersAndDetectors):
                 linePoints = linePointsDict[(angle, i)]
 
+                # Nakładamy wartość z sinogramu na piksele leżące na linii
                 for j in range(linePoints.shape[1]):
                     x, y = linePoints[:, j]
 
                     if 0 <= x < image_size[0] and 0 <= y < image_size[1]:
                         reconstructedImage[x, y] += sinogram[angle // alpha, i]
 
+            # Normalizacja do zakresu 0-255
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
             if not testing:
                 reconstructedImages[idx + 1] = reconstructedImageNormalized
 
+        # Wyłącznie do testów
+        # Zwrócenie tylko jednego obrazu, a nie każdej iteracji
         if testing:
             return reconstructedImageNormalized
 
@@ -123,6 +131,7 @@ class Tomograph:
             plt.title(f'Reconstructed Image {i}')
             plt.show()
 
+    # Packaging kolejnych wersji sinogramów i obrazów dla interaktywnego przeglądania
     def packageImages(self, sinogram: np.ndarray, reconstructedImages: dict):
         maxIter = sinogram.shape[0]
         dominantColor = np.median(sinogram)
@@ -134,20 +143,13 @@ class Tomograph:
             sinogramDisplay[-i:, :] = sinogram[-i:, :]
             sinograms[i] = sinogramDisplay
 
-
-        # plt.imshow(sinograms[maxIter], cmap='gray')
-        # plt.title('Sinogram')
-        # plt.show()
-        #
-        # plt.imshow(reconstructedImages[maxIter], cmap='gray')
-        # plt.title('Reconstructed Image')
-        # plt.show()
-
         return sinograms, reconstructedImages, maxIter
 
+    # Główna metoda uruchamiająca cały pipeline tomografii: wczytanie, projekcja, rekonstrukcja
     def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
             imageArray=None) -> tuple:
 
+        # Dopuszczalne jest przekazanie do metody od razu gotowej macierzy obrazu
         if imageArray is None:
             imageArray = self.converter.JPGtoMatrix(imageURL)
 
@@ -161,9 +163,3 @@ class Tomograph:
         sinogram, reconstructedImages, maxIter = self.packageImages(sinogram, reconstructedImages)
 
         return sinogram, reconstructedImages
-
-    def viewDicom(self, path: str):
-        img, meta = self.converter.readDicomFile(path)
-        return img, meta
-
-
