@@ -85,6 +85,7 @@ class Tomograph:
         reconstructedImages = dict()
 
         angles = np.linspace(0, 360, int(360 // alpha))
+        # Rozwiązanie czysto wizualne dla poprawy nasycenia
         if len(angles) <= 2:
             percentiles = (30, 90)
         else:
