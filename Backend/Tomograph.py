@@ -1,6 +1,7 @@
 from math import radians
 import numpy as np
 from matplotlib import pyplot as plt
+from skimage import exposure
 from skimage.draw import line
 from Backend.Converter import Converter
 from Backend.Filter import Filter
@@ -47,7 +48,9 @@ class Tomograph:
 
         linePointsDict = dict() # Słownik do przechowywania wszystkich linii dla późniejszej rekonstrukcji
 
-        for idx,angle in enumerate(range(0, 360, alpha)):
+        angles = np.linspace(0, 360, int(360 // alpha))
+
+        for idx, angle in enumerate(angles):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radiusX, radiusY, center)
 
             for i in range(numberOfEmittersAndDetectors):
@@ -81,9 +84,13 @@ class Tomograph:
         reconstructedImage = np.zeros(image_size)
         reconstructedImages = dict()
 
-        for idx, angle in enumerate(angles):
+        angles = np.linspace(0, 360, int(360 // alpha))
+        if len(angles) <= 2:
+            percentiles = (30, 90)
+        else:
+            percentiles = (40, 80)
 
-        for idx, angle in enumerate(range(0, 360, alpha)):
+        for idx, angle in enumerate(angles):
 
             for i in range(numberOfEmittersAndDetectors):
                 linePoints = linePointsDict[(angle, i)]
@@ -112,7 +119,7 @@ class Tomograph:
 
         return reconstructedImages
 
-    def displayImagesMatPlotLib(self,sinogram, reconstructedImages) -> None:
+    def displayImagesMatPlotLib(self, sinogram, reconstructedImages) -> None:
         maxIter = sinogram.shape[0]
 
         plt.imshow(sinogram, cmap='gray')
@@ -152,7 +159,7 @@ class Tomograph:
         return sinograms, reconstructedImages, maxIter
 
     # Główna metoda uruchamiająca cały pipeline tomografii: wczytanie, projekcja, rekonstrukcja
-    def run(self, imageURL: str,alpha: int, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
+    def run(self, imageURL: str, alpha, numberOfEmittersAndDetectors: int, angularSpread: int, filterSinogram: bool,
             imageArray=None) -> tuple:
 
         # Dopuszczalne jest przekazanie do metody od razu gotowej macierzy obrazu
