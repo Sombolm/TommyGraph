@@ -12,6 +12,34 @@ class Tester:
         self.converter = Converter()
         self.saver = Saver()
 
+    # Test RMSE w kolejnych iteracjach rekonstrukcji
+    def test_rmse_vs_iterations(self, image_array, alpha, number_of_detectors, angular_spread, center, radius_x, radius_y, filter_sinogram=False):
+        rmse_values = []
+
+        # Generuj pełny sinogram i mapę linii
+        lines, sinogram = self.tomograph.createSinogram(
+            image_array, alpha, number_of_detectors, angular_spread, center, radius_x, radius_y, filter_sinogram
+        )
+
+        # Rekonstruuj wszystkie iteracje
+        reconstructed_images = self.tomograph.createReconstruction(
+            sinogram, alpha, number_of_detectors, radius_x, radius_y, lines
+        )
+
+        # Oblicz RMSE dla każdej iteracji
+        for i in range(1, len(reconstructed_images) + 1):
+            rmse = self.utils.calculateRMSE(image_array, reconstructed_images[i])
+            rmse_values.append(rmse)
+            print(f"Iteracja: {i}, RMSE: {rmse}")
+
+        # Wykres RMSE vs iteracja
+        plt.plot(range(1, len(reconstructed_images) + 1), rmse_values, marker='o')
+        plt.title("RMSE vs Iteracja rekonstrukcji")
+        plt.xlabel("Numer iteracji")
+        plt.ylabel("RMSE")
+        plt.grid(True)
+        plt.savefig("output/recon_iterations_chart.png")
+
     # Test wpływu liczby detektorów na RMSE
     def test_rmse_vs_detectors(self, image_array, alpha, angular_spread, center, radius_x, radius_y, filter_sinogram=False):
         detectors_range = range(90, 721, 90)
@@ -65,7 +93,7 @@ class Tester:
         plt.xlabel("Liczba Skanów")
         plt.ylabel("RMSE")
         plt.grid(True)
-        plt.savefig("output/recon_detectors_chart.png")
+        plt.savefig("output/recon_scans_chart.png")
 
     # Test wpływu rozpiętości wachlarza na RMSE
     def test_rmse_vs_angular_spread(self, image_array, alpha, number_of_detectors, center, radius_x, radius_y, filter_sinogram=False):
@@ -92,7 +120,45 @@ class Tester:
         plt.xlabel("Rozpiętość [stopnie]")
         plt.ylabel("RMSE")
         plt.grid(True)
-        plt.savefig("output/recon_detectors_chart.png")
+        plt.savefig("output/recon_angular_chart.png")
+
+    # Test porównujący filtrację i brak filtracji dla dwóch obrazów
+    def test_filtering_comparison(self, image_paths):
+        alpha = 1
+        detectors = 360
+        spread = 180 # Zmiana, ponieważ robimy równolegle
+
+        for image_path in image_paths:
+            image_array = self.converter.JPGtoMatrix(image_path)
+            center = self.utils.getCenterOfImage(image_array)
+            radius_y, radius_x = self.utils.getRadiusOfImage(image_array)
+
+            # Z filtrem
+            lines_f, sinogram_f = self.tomograph.createSinogram(
+                image_array, alpha, detectors, spread, center, radius_x, radius_y, filter=True
+            )
+            recon_f = self.tomograph.createReconstruction(sinogram_f, alpha, detectors, radius_x, radius_y, lines_f,
+                                                          testing=True)
+
+            # Bez filtra
+            lines_nf, sinogram_nf = self.tomograph.createSinogram(
+                image_array, alpha, detectors, spread, center, radius_x, radius_y, filter=False
+            )
+            recon_nf = self.tomograph.createReconstruction(sinogram_nf, alpha, detectors, radius_x, radius_y,
+                                                           lines_nf, testing=True)
+
+            # RMSE względem oryginału
+            rmse_f = self.utils.calculateRMSE(image_array, recon_f)
+            rmse_nf = self.utils.calculateRMSE(image_array, recon_nf)
+
+            print(f"Obraz: {os.path.basename(image_path)}")
+            print(f"RMSE z filtrem: {rmse_f:.4f}")
+            print(f"RMSE bez filtra: {rmse_nf:.4f}")
+
+            # Zapisz obrazy wynikowe
+            base_name = os.path.splitext(os.path.basename(image_path))[0]
+            self.saver.saveMatrixAsJPG(recon_f, f"output/{base_name}_filtered.jpg")
+            self.saver.saveMatrixAsJPG(recon_nf, f"output/{base_name}_no_filter.jpg")
 
     def run_all_tests(self, image_url):
         image_array = self.converter.JPGtoMatrix(image_url)
@@ -103,9 +169,16 @@ class Tester:
         detectors = 180
         angular_spread = 180
 
+        self.test_rmse_vs_iterations(image_array, alpha, detectors, angular_spread, center, radius_x, radius_y)
         self.test_rmse_vs_detectors(image_array, alpha, angular_spread, center, radius_x, radius_y)
         self.test_rmse_vs_scans(image_array, detectors, angular_spread, center, radius_x, radius_y)
         self.test_rmse_vs_angular_spread(image_array, alpha, detectors, center, radius_x, radius_y)
+
+        image_paths = [
+            "../ExampleImages/Shepp_logan.jpg",
+            "../ExampleImages/CT_ScoutView.jpg"
+        ]
+        self.test_filtering_comparison(image_paths)
 
 if __name__ == '__main__':
     tester = Tester()
