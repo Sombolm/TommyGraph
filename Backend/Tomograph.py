@@ -81,6 +81,8 @@ class Tomograph:
         reconstructedImage = np.zeros(image_size)
         reconstructedImages = dict()
 
+        for idx, angle in enumerate(angles):
+
         for idx, angle in enumerate(range(0, 360, alpha)):
 
             for i in range(numberOfEmittersAndDetectors):
@@ -96,6 +98,10 @@ class Tomograph:
             # Normalizacja do zakresu 0-255
             reconstructedImageNormalized = 255 * (reconstructedImage - np.min(reconstructedImage)) / (
                         np.max(reconstructedImage) - np.min(reconstructedImage))
+            # Przeskalowanie nasycenia obrazu
+            low, high = np.percentile(reconstructedImageNormalized, percentiles)
+            reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
+                                                                      in_range=(low, high))
             if not testing:
                 reconstructedImages[idx + 1] = reconstructedImageNormalized
 
