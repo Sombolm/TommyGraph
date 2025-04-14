@@ -33,6 +33,7 @@ class Tester:
             print(f"Iteracja: {i}, RMSE: {rmse}")
 
         # Wykres RMSE vs iteracja
+        plt.figure()
         plt.plot(range(1, len(reconstructed_images) + 1), rmse_values, marker='o')
         plt.title("RMSE vs Iteracja rekonstrukcji")
         plt.xlabel("Numer iteracji")
@@ -59,7 +60,7 @@ class Tester:
             filename = f"output/recon_detectors_{det_count}.jpg"
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             self.saver.saveMatrixAsJPG(recon, filename)
-
+        plt.figure()
         plt.plot(list(detectors_range), rmse_values, marker='o')
         plt.title("RMSE vs Liczba Detektorów")
         plt.xlabel("Liczba Detektorów")
@@ -87,7 +88,7 @@ class Tester:
             filename = f"output/recon_scans_{scan_count}.jpg"
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             self.saver.saveMatrixAsJPG(recon, filename)
-
+        plt.figure()
         plt.plot(list(scans_range), rmse_values, marker='o')
         plt.title("RMSE vs Liczba Skanów")
         plt.xlabel("Liczba Skanów")
@@ -114,7 +115,7 @@ class Tester:
             filename = f"output/recon_spread_{spread}.jpg"
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             self.saver.saveMatrixAsJPG(recon, filename)
-
+        plt.figure()
         plt.plot(list(spread_range), rmse_values, marker='o')
         plt.title("RMSE vs Rozpiętość Wachlarza")
         plt.xlabel("Rozpiętość [stopnie]")
