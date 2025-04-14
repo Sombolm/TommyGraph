@@ -44,7 +44,7 @@ class Tomograph:
     # Tworzenie sinogram z obrazu wejściowego przez obliczenie sum pikseli dla każdej pary emiter-detektor
     def createSinogram(self, imageArray: np.ndarray, alpha, numberOfEmittersAndDetectors: int,
                        angularSpread: int, center: tuple, radiusX: int,radiusY: int, filter: bool) -> tuple:
-        sinogram = np.zeros((360 // alpha, numberOfEmittersAndDetectors)) # Inicjalizacja sinogramu
+        sinogram = np.zeros((int(360 // alpha), numberOfEmittersAndDetectors)) # Inicjalizacja sinogramu
 
         linePointsDict = dict() # Słownik do przechowywania wszystkich linii dla późniejszej rekonstrukcji
 
