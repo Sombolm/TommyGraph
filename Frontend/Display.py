@@ -150,7 +150,7 @@ def get_appbar(page: ft.Page, fileSelector: FileLoader, saveButton: ft.ElevatedB
                 page.open(alertDialogBadInput)
                 return False
 
-        alpha = validate_parameters(alpha)
+        alpha = float(alpha)
         numEmittersDetectors = validate_parameters(numEmittersDetectors)
         angSpread = validate_parameters(angSpread)
 
