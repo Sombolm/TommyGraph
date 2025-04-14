@@ -86,7 +86,7 @@ class Tomograph:
 
         angles = np.linspace(0, 360, int(360 // alpha))
         # Rozwiązanie czysto wizualne dla poprawy nasycenia
-        percentiles = (30, 90)
+        # percentiles = (30, 90)
 
         for idx, angle in enumerate(angles):
 
@@ -105,16 +105,16 @@ class Tomograph:
                         np.max(reconstructedImage) - np.min(reconstructedImage))
 
             # Przeskalowanie intensywności kolorów obrazu
-            if isFiltered:
-                low = percentiles[0] / 100 * np.max(reconstructedImageNormalized)
-                high = percentiles[1] / 100 * np.max(reconstructedImageNormalized)
-                reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
-                                                                          in_range=(low, high))
-            else:
-                low = percentiles[0] - 25 / 100 * np.max(reconstructedImageNormalized)
-                high = percentiles[1] + 5 / 100 * np.max(reconstructedImageNormalized)
-                reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
-                                                                          in_range=(low, high))
+            # if isFiltered:
+            #     low = percentiles[0] / 100 * np.max(reconstructedImageNormalized)
+            #     high = percentiles[1] / 100 * np.max(reconstructedImageNormalized)
+            #     reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
+            #                                                               in_range=(low, high))
+            # else:
+            #     low = percentiles[0] - 25 / 100 * np.max(reconstructedImageNormalized)
+            #     high = percentiles[1] + 5 / 100 * np.max(reconstructedImageNormalized)
+            #     reconstructedImageNormalized = exposure.rescale_intensity(reconstructedImageNormalized,
+            #                                                               in_range=(low, high))
 
             if not testing:
                 reconstructedImages[idx + 1] = reconstructedImageNormalized
