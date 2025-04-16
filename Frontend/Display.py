@@ -88,13 +88,16 @@ def get_details_field(fileSaver: FileSaver, fileSelector: FileLoader):
                              label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
     patientIdField = ft.TextField(label="Patient ID", value=patientIdValue, width=280,
                                   color=textFieldColor, border_color=textFieldColor,
-                                  label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
+                                  label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor,
+                                  input_filter=ft.InputFilter(allow=True, regex_string=r"^[0-9]*$",replacement_string="" ))
     commentField = ft.TextField(label="Image Comments", value=commentValue, width=280,
                                 color=textFieldColor, border_color=textFieldColor,
                                 label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
     dateField = ft.TextField(label="Study Date", value=dateValue, width=280,
                              color=textFieldColor, border_color=textFieldColor,
-                             label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor)
+                             label_style=ft.TextStyle(color=textFieldColor), cursor_color=textFieldColor,
+                             input_filter=ft.InputFilter(allow=True, regex_string=r"^[0-9]{0,8}$", replacement_string="" )
+                             )
 
     saveButton = ft.ElevatedButton("Save as DICOM", on_click=save_as_dicom, disabled=True)
 

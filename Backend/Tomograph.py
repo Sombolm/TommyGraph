@@ -53,6 +53,15 @@ class Tomograph:
         for idx, angle in enumerate(angles):
             emitters, detectors = self.getEmitterAndDetectorPoints(angle, numberOfEmittersAndDetectors, angularSpread, radiusX, radiusY, center)
 
+            '''
+            plt.imshow(imageArray, cmap='gray')
+            plt.scatter(emitters[:, 0], emitters[:, 1], color='red', label='Emitters')
+            plt.scatter(detectors[:, 0], detectors[:, 1], color='blue', label='Detectors')
+            plt.title(f'Emitters and Detectors at angle {angle}')
+            plt.legend()
+            plt.show()'''
+
+
             for i in range(numberOfEmittersAndDetectors):
                 emitter = emitters[i]
                 detector = detectors[i]
